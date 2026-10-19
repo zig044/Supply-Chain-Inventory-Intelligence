@@ -1,10 +1,10 @@
-
 -- Supply Chain & Inventory Intelligence System
--- Analytical queries for the synthetic dataset
+-- SQL analysis using a synthetic dataset
 
 USE supply_chain_analytics;
 
--- 1. Monthly sales trends
+
+-- 1. Monthly Sales Trends
 SELECT
     DATE_FORMAT(sale_date, '%Y-%m') AS sales_month,
     SUM(quantity_sold) AS units_sold,
@@ -13,7 +13,8 @@ FROM sales
 GROUP BY DATE_FORMAT(sale_date, '%Y-%m')
 ORDER BY sales_month;
 
--- 2. Product revenue and estimated gross profit
+
+-- 2. Product Revenue and Estimated Gross Profit
 SELECT
     p.product_id,
     p.product_name,
@@ -23,12 +24,17 @@ SELECT
     ROUND(
         SUM(s.quantity_sold * (s.unit_price - p.unit_cost)), 2
     ) AS estimated_gross_profit
-FROM products p
-JOIN sales s ON s.product_id = p.product_id
-GROUP BY p.product_id, p.product_name, p.category
+FROM products AS p
+JOIN sales AS s
+    ON s.product_id = p.product_id
+GROUP BY
+    p.product_id,
+    p.product_name,
+    p.category
 ORDER BY estimated_gross_profit DESC;
 
--- 3. Supplier delivery performance
+
+-- 3. Supplier Delivery Performance
 SELECT
     supplier_id,
     supplier_name,
@@ -39,16 +45,19 @@ SELECT
 FROM vw_supplier_performance
 ORDER BY on_time_delivery_pct ASC;
 
--- 4. Products with zero or negative stock per warehouse
+
+-- 4. Products with Zero or Negative Stock by Warehouse
 SELECT
     p.product_id,
     p.product_name,
     p.category,
     w.warehouse_name,
     SUM(im.quantity_change) AS current_stock
-FROM inventory_movements im
-JOIN products p ON p.product_id = im.product_id
-JOIN warehouses w ON w.warehouse_id = im.warehouse_id
+FROM inventory_movements AS im
+JOIN products AS p
+    ON p.product_id = im.product_id
+JOIN warehouses AS w
+    ON w.warehouse_id = im.warehouse_id
 GROUP BY
     p.product_id,
     p.product_name,
@@ -58,14 +67,18 @@ GROUP BY
 HAVING SUM(im.quantity_change) <= 0
 ORDER BY current_stock ASC;
 
--- 5. Inventory value using current unit costs
+
+-- 5. Inventory Value at Current Unit Costs
 SELECT
     ROUND(SUM(stock.current_stock * p.unit_cost), 2)
         AS total_inventory_value,
     SUM(stock.current_stock) AS total_units_in_stock
 FROM (
-    SELECT product_id, SUM(quantity_change) AS current_stock
+    SELECT
+        product_id,
+        SUM(quantity_change) AS current_stock
     FROM inventory_movements
     GROUP BY product_id
 ) AS stock
-JOIN products p ON p.product_id = stock.product_id;
+JOIN products AS p
+    ON p.product_id = stock.product_id;
